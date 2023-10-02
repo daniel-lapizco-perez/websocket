@@ -1,61 +1,31 @@
-import socket
-import select
-import sys
+import time, socket, sys
 
-from _thread import *
+new_socket = socket.socket()
+host_name = socket.gethostname()
+socket_ip = socket.gethostbyname(host_name)
 
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+port = 8080
 
-if len(sys.argv) != 3:
-    print("Correct usage")
-    exit()
+new_socket.bind((host_name, port))
+print("binding successfull!")
+print("This is your IP: ", socket_ip)
 
-IP_address = str(sys.argv[1])
-Port = int(sys.argv[2])
+name = input('Enter name: ')
 
-server.bind((IP_address, Port))
+new_socket.listen(1)
 
-server.listen(100)
-list_clients = []
+conn, addr = new_socket.accept()
 
-def client_thread(conn, addr):
-    conn.send("Welcome to help desk!")
+print("Received connection from ", addr[0])
+print('Connection Established, connected from: ', addr[0])
 
-    while True:
-        try:
-            message = conn.recv(2048)
-            if message:
-                print("<" + addr[0] + "> " + message)
-                message_to_send = "<" + addr[0] + "> " + message
-                broadcast(message_to_send, conn)
-            
-            else:
-                remove(conn)
-        except:
-            continue
+client = (conn.recv(1024)).decode()
+print(client + ' has connected')
 
-
-def broadcast(message, connection):
-    for clients in list_clients:
-        if clients!=connection:
-            try:
-                clients.send(message)
-            except:
-                clients.close()
-                remove(clients)
-
-def remove(connection):
-    if connection in list_clients:
-        list_clients.remove(connection)
-
+conn.send(name.encode())
 while True:
-    conn, addr = server.accept()
-    list_clients.append(conn)
-
-    print (addr[0] + " connected")
-
-    start_new_thread(client_thread, (conn, addr))
-
-    conn.close()
-    server.close()
+    message = input('Me: ')
+    conn.send(message.encode())
+    message = conn.recv(1024)
+    message = message.decode()
+    print(client, ":", message)
